@@ -1,0 +1,52 @@
+[
+  {
+    "name": "Alex Rivera",
+    "company": "Northstar Works",
+    "email": "alex@example.com",
+    "service": "CRM integration",
+    "urgency_days": 1,
+    "estimated_budget_eur": 12000,
+    "message": "We need a proposal and quick evaluation for a new client onboarding workflow by Friday.",
+    "expected_priority": "HOT"
+  },
+  {
+    "name": "Maya Chen",
+    "company": "Acme Studio",
+    "email": "maya@example.com",
+    "service": "Customer follow-up automation",
+    "urgency_days": 10,
+    "estimated_budget_eur": 1500,
+    "message": "We have some missed follow-ups and would like to automate reminders with review.",
+    "expected_priority": "WARM"
+  },
+  {
+    "name": "Sam Taylor",
+    "company": "Solo Studio",
+    "email": "sam@example.com",
+    "service": "Form cleanup",
+    "urgency_days": 30,
+    "estimated_budget_eur": 0,
+    "message": "Looking for options.",
+    "expected_priority": "LOW"
+  },
+  {
+    "name": "Casey Morgan",
+    "company": "Demo Corp",
+    "email": "not-an-email",
+    "service": "Lead scoring",
+    "urgency_days": 1,
+    "estimated_budget_eur": 10000,
+    "message": "We need this now but the email address is intentionally invalid for a safe demo.",
+    "expected_priority": "REVIEW"
+  },
+  {
+    "name": "Lee Park",
+    "company": "Quiet Co",
+    "email": "lee@example.com",
+    "service": "",
+    "urgency_days": 15,
+    "estimated_budget_eur": 500,
+    "message": "Just checking.",
+    "expected_priority": "REVIEW"
+  }
+]
