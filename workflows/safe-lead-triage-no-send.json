@@ -1,0 +1,99 @@
+{
+  "name": "FREE | Safe Lead Triage — Synthetic Demo (NO SEND)",
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "nodes": [
+    {
+      "parameters": {},
+      "id": "d46bb4b1-59a0-425e-9893-d884b9655054",
+      "name": "Manual Test Trigger",
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [
+        -760,
+        120
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const leads = [\n  {\n    \"name\": \"Alex Rivera\",\n    \"company\": \"Northstar Works\",\n    \"email\": \"alex@example.com\",\n    \"service\": \"CRM integration\",\n    \"urgency_days\": 1,\n    \"estimated_budget_eur\": 12000,\n    \"message\": \"We need a proposal and quick evaluation for a new client onboarding workflow by Friday.\",\n    \"expected_priority\": \"HOT\"\n  },\n  {\n    \"name\": \"Maya Chen\",\n    \"company\": \"Acme Studio\",\n    \"email\": \"maya@example.com\",\n    \"service\": \"Customer follow-up automation\",\n    \"urgency_days\": 10,\n    \"estimated_budget_eur\": 1500,\n    \"message\": \"We have some missed follow-ups and would like to automate reminders with review.\",\n    \"expected_priority\": \"WARM\"\n  },\n  {\n    \"name\": \"Sam Taylor\",\n    \"company\": \"Solo Studio\",\n    \"email\": \"sam@example.com\",\n    \"service\": \"Form cleanup\",\n    \"urgency_days\": 30,\n    \"estimated_budget_eur\": 0,\n    \"message\": \"Looking for options.\",\n    \"expected_priority\": \"LOW\"\n  },\n  {\n    \"name\": \"Casey Morgan\",\n    \"company\": \"Demo Corp\",\n    \"email\": \"not-an-email\",\n    \"service\": \"Lead scoring\",\n    \"urgency_days\": 1,\n    \"estimated_budget_eur\": 10000,\n    \"message\": \"We need this now but the email address is intentionally invalid for a safe demo.\",\n    \"expected_priority\": \"REVIEW\"\n  },\n  {\n    \"name\": \"Lee Park\",\n    \"company\": \"Quiet Co\",\n    \"email\": \"lee@example.com\",\n    \"service\": \"\",\n    \"urgency_days\": 15,\n    \"estimated_budget_eur\": 500,\n    \"message\": \"Just checking.\",\n    \"expected_priority\": \"REVIEW\"\n  }\n];\nreturn leads.map((lead) => ({ json: lead }));"
+      },
+      "id": "be6c47de-5e33-4787-804a-f5d2438d7b78",
+      "name": "5 Synthetic Leads",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -500,
+        120
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const validEmail = (s) => /^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$/.test(String(s || '').trim());\nconst esc = (s) => String(s || '').replace(/[<>]/g, '');\nconst norm = (lead) => ({\n  name: esc(lead.name).slice(0, 80),\n  company: esc(lead.company).slice(0, 120),\n  email: String(lead.email || '').trim().toLowerCase().slice(0, 254),\n  service: esc(lead.service).slice(0, 120),\n  urgency_days: Number.isFinite(Number(lead.urgency_days)) ? Math.max(0, Number(lead.urgency_days)) : 999,\n  estimated_budget_eur: Number.isFinite(Number(lead.estimated_budget_eur)) ? Math.max(0, Number(lead.estimated_budget_eur)) : 0,\n  message: esc(lead.message).slice(0, 1500)\n});\nreturn $input.all().map((item, idx) => {\n  const lead = norm(item.json);\n  const issues = [];\n  if (!validEmail(lead.email)) issues.push('invalid_email');\n  if (!lead.service) issues.push('missing_service');\n  // This is deterministic priority scoring, NOT an AI model or an audited sales outcome prediction.\n  let score = 0;\n  score += lead.urgency_days <= 1 ? 35 : lead.urgency_days <= 3 ? 25 : lead.urgency_days <= 7 ? 15 : 5;\n  score += lead.estimated_budget_eur >= 5000 ? 25 : lead.estimated_budget_eur >= 1000 ? 15 : 0;\n  score += lead.service ? 20 : 0;\n  score += validEmail(lead.email) ? 10 : 0;\n  score += lead.message.length >= 40 ? 10 : 0;\n  const priority = issues.length ? 'REVIEW' : score >= 70 ? 'HOT' : score >= 40 ? 'WARM' : 'LOW';\n  const recipient = lead.name || 'there';\n  const draft = `Hi ${recipient},\\\\n\\\\nThank you for contacting us about ${lead.service || 'your request'}. We have received your enquiry and will review the details. A team member will follow up to clarify the scope and next steps.\\\\n\\\\nBest regards,\\\\nThe team`;\n  return { json: { ...lead, score, priority, issues, draft_reply: draft.replaceAll(String.fromCharCode(92) + \"n\", String.fromCharCode(10)), outbound_sent: false, needs_human_approval: true, expected_priority: item.json.expected_priority || null }, pairedItem: { item: idx } };\n});"
+      },
+      "id": "76327537-09f0-45af-9ce2-bcff203ad2f7",
+      "name": "Score Leads and Draft Replies",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -230,
+        120
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const items = $input.all();\nconst results = items.map(i => ({ name: i.json.name, expected: i.json.expected_priority, actual: i.json.priority, pass: i.json.expected_priority === i.json.priority, outbound_sent: i.json.outbound_sent }));\nconst all_pass = results.every(x => x.pass && x.outbound_sent === false);\nreturn [{ json: { all_pass, passed: results.filter(r=>r.pass).length, total: results.length, results, note: 'Synthetic educational test cases only. Verify in your own n8n instance; this is not a production-ready lead scoring system.' } }];"
+      },
+      "id": "776bdd28-cdcd-4a81-9749-fac0da421a65",
+      "name": "QA Report",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        50,
+        120
+      ]
+    }
+  ],
+  "connections": {
+    "Manual Test Trigger": {
+      "main": [
+        [
+          {
+            "node": "5 Synthetic Leads",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "5 Synthetic Leads": {
+      "main": [
+        [
+          {
+            "node": "Score Leads and Draft Replies",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Score Leads and Draft Replies": {
+      "main": [
+        [
+          {
+            "node": "QA Report",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "pinData": {},
+  "meta": {
+    "templateCredsSetupCompleted": false
+  },
+  "tags": []
+}
